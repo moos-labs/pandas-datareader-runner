@@ -1,7 +1,9 @@
 # Pinned legacy stack: pandas-datareader 0.11+ removed the Stooq reader
 # (v0.11.0, June 2026). 0.10.0 is the last release with Stooq support and
 # needs the pandas 1.5 / numpy 1.24 era it was built against.
+# 'six' is an undeclared dependency of 0.10.0 (its naver.py imports it).
 pandas-datareader==0.10.0
 pandas==1.5.3
 numpy==1.24.4
 requests
+six
