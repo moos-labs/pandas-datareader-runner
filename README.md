@@ -6,9 +6,9 @@ each tool gets its own repo, the commands to execute live in a repository
 **Actions variable** (not in code), runs are triggered manually, and
 outputs are collected as artifacts.
 
-pandas-datareader provides a uniform `DataReader` interface to many
-remote data sources — FRED (Federal Reserve Economic Data), Stooq,
-World Bank, OECD, and more — returning pandas DataFrames.
+pandas-datareader provides a uniform `DataReader` interface to remote
+data sources — FRED (Federal Reserve Economic Data), World Bank, OECD,
+Fama/French, and more — returning pandas DataFrames.
 
 ## The pattern (one repo per tool)
 
@@ -57,12 +57,37 @@ other. Outputs per run, in `results/`:
   `error` for that series
 - `run.log` — the console log (via `tee` in `COMMANDS`)
 
-## Pilot
+## Pilot — verified results (10 Nov 2026)
 
-Defaults fetch, for the last ~1 year:
+Pilot defaults fetch, for the last ~1 year:
 
 - **FRED `DGS10`** — 10-Year Treasury Constant Maturity Rate (daily, %)
 - **Stooq `^SPX`** — S&P 500 index (daily OHLCV; summary values use Close)
 
-See the `results` artifact of the first dispatched run for the verified
-pilot figures.
+**FRED `DGS10` — works.** Verified identical in run 1 (current
+pandas-datareader) and run 3 (pinned legacy stack); the two
+`fred_DGS10.csv` files are byte-identical:
+
+- 260 rows, 2025-11-10 → 2026-11-06
+- First value 4.13 (2025-11-10), last value 4.86 (2026-11-06)
+
+**Stooq `^SPX` — data source genuinely broken in 2026**, in both library
+generations:
+
+- Current pandas-datareader (0.11.x): the Stooq reader was **removed** in
+  v0.11.0 (June 2026), which narrowed the package to macro/factor sources
+  (FRED, Fama/French, World Bank, OECD, …). Exact error from run 1:
+  `NotImplementedError: data_source='stooq' is not implemented`
+- Pinned legacy stack (`pandas-datareader==0.10.0`, the last release with
+  a Stooq reader — see `requirements.txt`): the reader runs, but Stooq's
+  CSV endpoint itself no longer serves the file. Exact error from run 3:
+  `RemoteDataError: Unable to read URL: https://stooq.com/q/d/l/?s=%5ESPX&i=d&d1=20251110&d2=20261110`
+  — stooq.com answers with an HTML page: *"The page you requested does not
+  exist or has been moved"* (Stooq moved CSV downloads behind an API key
+  in 2026).
+
+That is why `requirements.txt` stays on the pinned legacy stack: it is
+the configuration in which the Stooq failure is the genuine upstream
+failure (endpoint gone) rather than a library removal, and FRED output is
+identical either way. To fetch a different FRED series, pass
+`--fred-series <ID>` via the `COMMANDS` variable.
